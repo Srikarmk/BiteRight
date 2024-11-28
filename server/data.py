@@ -10,7 +10,7 @@ MONGO_DB_URL = "mongodb+srv://srikarmks:6Y2zyA11hkNIRW6I@restaurant.qf5lj.mongod
 
 client = MongoClient(MONGO_DB_URL)
 db = client.get_database("Biterite")
-collection = db["Restaurants"]
+collection = db["Staff"]
 
 class DataItem(BaseModel):
     name: str
