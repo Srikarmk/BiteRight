@@ -1,13 +1,15 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 const Signup = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    phone: "",
     email: "",
+    contactNum: "",
     address: "",
-    zipCode: "",
+    zip: "",
+    password: "",
   });
 
   const handleChange = (e) => {
@@ -18,10 +20,39 @@ const Signup = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log(formData);
+    try {
+      const response = await fetch("http://localhost:8000/customers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Registration failed");
+      }
+
+      const data = await response.json();
+      console.log("Success:", data);
+      alert("Registration Successful!");
+      // Reset form data after successful registration
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        contactNum: "",
+        address: "",
+        zip: "",
+        password: "",
+      });
+    } catch (error) {
+      console.error("Error details:", error);
+      alert(error.message || "Registration failed");
+    }
   };
 
   return (
@@ -58,12 +89,25 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="phone">Phone Number</label>
+            <label htmlFor="password">Password</label>
             <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
+              type="text"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-[#A04732] rounded-md focus:outline-none focus:ring-1 focus:ring-[#A04732]"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="contactNum">Phone Number</label>
+            <input
+              type="text"
+              id="contactNum"
+              name="contactNum"
+              value={formData.contactNum}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-[#A04732] rounded-md focus:outline-none focus:ring-1 focus:ring-[#A04732]"
@@ -97,12 +141,12 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="zipCode">Zip Code</label>
+            <label htmlFor="zip">Zip Code</label>
             <input
               type="text"
-              id="zipCode"
-              name="zipCode"
-              value={formData.zipCode}
+              id="zip"
+              name="zip"
+              value={formData.zip}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-[#A04732] rounded-md focus:outline-none focus:ring-1 focus:ring-[#A04732]"

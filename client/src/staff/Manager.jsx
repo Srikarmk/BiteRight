@@ -1,8 +1,18 @@
 import Logo from "../images/Logo.png";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 const Manager = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [staffName, setStaffName] = useState("");
+
+  useEffect(() => {
+    const staffUser = JSON.parse(localStorage.getItem("staffUser"));
+    if (staffUser) {
+      setStaffName(`${staffUser.firstName} ${staffUser.lastName}`);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#EDEAE2]">
       <nav className="bg-[#EDEAE2] shadow-md p-5 flex justify-between items-center">
@@ -13,7 +23,7 @@ const Manager = () => {
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="font-semibold flex items-center gap-1"
           >
-            Manager
+            {staffName}
             <svg
               className="w-4 h-4"
               fill="none"

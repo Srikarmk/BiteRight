@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 const StaffLogin = () => {
   const [formData, setFormData] = useState({
     restaurantId: "",
@@ -7,9 +7,58 @@ const StaffLogin = () => {
     password: "",
     role: "",
   });
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    if (
+      !formData.restaurantId ||
+      !formData.email ||
+      !formData.password ||
+      !formData.role
+    ) {
+      setError("Please fill in all fields");
+      return;
+    }
+    console.log(
+      formData.restaurantId,
+      formData.email,
+      formData.password,
+      formData.role
+    );
+    try {
+      const response = await fetch("http://localhost:8000/staff-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Add this to handle cookies if your server uses them
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+      localStorage.setItem("staffId", data.staff_id);
+      if (response.ok) {
+        localStorage.setItem("staffUser", JSON.stringify(data.user));
+        if (formData.role === "Manager") {
+          navigate("/manager");
+        } else if (formData.role === "Chef") {
+          navigate("/chef");
+        }
+      } else {
+        // More detailed error handling
+        setError(
+          data.detail ||
+            data.message ||
+            "Login failed. Please check your credentials."
+        );
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Unable to connect to the server. Please try again later.");
+    }
   };
 
   return (
@@ -66,8 +115,8 @@ const StaffLogin = () => {
               }
             >
               <option value="">Select Role</option>
-              <option value="manager">Manager</option>
-              <option value="chef">Chef</option>
+              <option value="Manager">Manager</option>
+              <option value="Chef">Chef</option>
             </select>
           </div>
 
@@ -86,6 +135,9 @@ const StaffLogin = () => {
             Back
           </button>
         </Link>
+        {error && (
+          <div className="text-red-500 text-sm text-center">{error}</div>
+        )}
       </div>
     </div>
   );
