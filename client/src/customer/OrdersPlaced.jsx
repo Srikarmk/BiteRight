@@ -6,6 +6,13 @@ import Logo from "../images/Logo.png";
 const OrdersPlaced = () => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [user, setUser] = useState("");
+  useEffect(() => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    if (curruser) {
+      setUser(curruser.firstname);
+    }
+  }, []);
 
   const handleLogout = () => {
     navigate("/");
@@ -24,7 +31,7 @@ const OrdersPlaced = () => {
                   className="flex items-center space-x-1 text-gray-700 hover:text-gray-900"
                   onClick={() => setShowDropdown(!showDropdown)}
                 >
-                  <span>Welcome customer </span>
+                  <span>Welcome {user}</span>
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -54,6 +61,18 @@ const OrdersPlaced = () => {
           </div>
         </div>
       </nav>
+      <div className="flex w-full justify-between px-10 h-[80px]">
+        <button className="">
+          <Link to="/home" className="bg-orange-300 px-5 py-2 rounded-lg">
+            Home
+          </Link>
+        </button>
+        <button className="flex items-center space-x-2">
+          <Link to="/cart">
+            <img src={Cart} alt="" />
+          </Link>
+        </button>
+      </div>
       <div className="max-w-7xl mx-auto px-4 mt-4">
         <h2 className="text-xl font-bold">Order Summary</h2>
         <p className="mt-2">Order ID: #123456</p>

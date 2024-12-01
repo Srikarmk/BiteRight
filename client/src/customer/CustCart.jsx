@@ -6,10 +6,30 @@ import Logo from "../images/Logo.png";
 const CustCart = () => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [user, setUser] = useState("");
+  const [cartItems, setCartItems] = useState({});
 
+  useEffect(() => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    if (curruser) {
+      setUser(curruser.firstname);
+    }
+  }, []);
+
+  useEffect(() => {
+    const currentCart = JSON.parse(localStorage.getItem("cart")) || {};
+    setCartItems(currentCart);
+  }, []);
+  console.log(cartItems);
   const handleLogout = () => {
     navigate("/");
   };
+  const total = Object.entries(cartItems).reduce(
+    (acc, [, item]) => acc + item.price * item.count,
+    0
+  );
+  const serviceFee = 5.0; // Fixed service fee
+  const grandTotal = total + serviceFee;
   return (
     <div>
       <nav className="bg-[#EDEAE2] shadow-lg">
@@ -24,7 +44,7 @@ const CustCart = () => {
                   className="flex items-center space-x-1 text-gray-700 hover:text-gray-900"
                   onClick={() => setShowDropdown(!showDropdown)}
                 >
-                  <span>Welcome customer </span>
+                  <span>Welcome {user}</span>
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -54,6 +74,18 @@ const CustCart = () => {
           </div>
         </div>
       </nav>
+      <div className="flex w-full justify-between px-10 h-[80px]">
+        <button className="">
+          <Link to="/home" className="bg-orange-300 px-5 py-2 rounded-lg">
+            Home
+          </Link>
+        </button>
+        <button className="flex items-center space-x-2">
+          <Link to="/cart">
+            <img src={Cart} alt="" />
+          </Link>
+        </button>
+      </div>
       <div className="max-w-7xl mx-auto px-4 mt-4">
         <h2 className="text-xl font-bold">Order Summary</h2>
         <table className="min-w-full mt-2 border">
@@ -66,18 +98,22 @@ const CustCart = () => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="border px-4 py-2">1</td>
-              <td className="border px-4 py-2">2</td>
-              <td className="border px-4 py-2">Item Name</td>
-              <td className="border px-4 py-2">$10.00</td>
-            </tr>
+            {Object.entries(cartItems).map(([key, item], index) => (
+              <tr key={key}>
+                <td className="border px-4 py-2">{index + 1}</td>
+                <td className="border px-4 py-2">{item.count}</td>{" "}
+                <td className="border px-4 py-2">{item.menu_item}</td>
+                <td className="border px-4 py-2">
+                  ${item.price * item.count}
+                </td>{" "}
+              </tr>
+            ))}
           </tbody>
         </table>
         <div className="mt-4">
-          <p className="font-bold">Total: $10.00</p>
-          <p className="font-bold">Service Fee: $5.00</p>
-          <p className="font-bold">Grand Total: $15.00</p>
+          <p className="font-bold">Total: ${total.toFixed(2)}</p>
+          <p className="font-bold">Service Fee: ${serviceFee.toFixed(2)}</p>
+          <p className="font-bold">Grand Total: ${grandTotal.toFixed(2)}</p>
         </div>
         <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded">
           <Link to="/ordersplaced">Place Order</Link>

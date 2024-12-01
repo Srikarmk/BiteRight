@@ -11,6 +11,13 @@ const Restaurant = () => {
   const [restaurant, setRestaurant] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState("");
+  useEffect(() => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    if (curruser) {
+      setUser(curruser.firstname);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchRestaurantData = async () => {
@@ -48,10 +55,28 @@ const Restaurant = () => {
 
   const handleCountChange = (itemId, newCount) => {
     if (newCount >= 0 && newCount <= 5) {
-      setMenuCounts((prev) => ({
-        ...prev,
-        [itemId]: newCount,
-      }));
+      setMenuCounts((prev) => {
+        const updatedCounts = {
+          ...prev,
+          [itemId]: newCount,
+        };
+
+        // Update local storage
+        const currentCart = JSON.parse(localStorage.getItem("cart")) || {};
+        if (newCount === 0) {
+          delete currentCart[itemId]; // Remove item if count is 0
+        } else {
+          currentCart[itemId] = {
+            menu_item: menuItems.find((item) => item.menu_item === itemId)
+              .menu_item,
+            price: menuItems.find((item) => item.menu_item === itemId).price,
+            count: newCount,
+          };
+        }
+        localStorage.setItem("cart", JSON.stringify(currentCart)); // Save updated cart to local storage
+
+        return updatedCounts;
+      });
     }
   };
 
@@ -79,7 +104,7 @@ const Restaurant = () => {
                   className="flex items-center space-x-1 text-gray-700 hover:text-gray-900"
                   onClick={() => setShowDropdown(!showDropdown)}
                 >
-                  <span>Welcome customer </span>
+                  <span>Welcome {user}</span>
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -135,7 +160,7 @@ const Restaurant = () => {
         <div className="flex items-center gap-2 mt-2">
           <span>{restaurant.borough}</span>
           <span>⭐ {restaurant.stars}</span>
-          <span>({restaurant.reviews || 0} reviews)</span>
+          <span>({restaurant.review_count || 0} reviews)</span>
           <span className="ml-2">{restaurant.cuisine}</span>
         </div>
 
@@ -153,22 +178,24 @@ const Restaurant = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
+                    id={item.menu_item}
                     onClick={() =>
                       handleCountChange(
-                        item.item_id,
-                        (menuCounts[item.item_id] || 0) - 1
+                        item.menu_item,
+                        Math.max((menuCounts[item.menu_item] || 0) - 1, 0) // Ensure count doesn't go below 0
                       )
                     }
                     className="px-3 py-1 bg-gray-200 rounded"
                   >
                     -
                   </button>
-                  <span>{menuCounts[item.item_id] || 0}</span>
+                  <span>{menuCounts[item.menu_item] || 0}</span>
                   <button
+                    id={item.menu_item}
                     onClick={() =>
                       handleCountChange(
-                        item.item_id,
-                        (menuCounts[item.item_id] || 0) + 1
+                        item.menu_item,
+                        Math.min((menuCounts[item.menu_item] || 0) + 1, 5) // Ensure count doesn't exceed 5
                       )
                     }
                     className="px-3 py-1 bg-gray-200 rounded"

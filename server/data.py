@@ -227,6 +227,7 @@ async def get_restaurant_details(restaurant_id: int):
                 "cuisine": 1,
                 "borough": 1,
                 "address": 1,
+                "review_count":1,
                 "stars": 1,
                 "reviews": 1
             }

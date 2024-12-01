@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../images/Logo.png";
 import axios from "axios";
+import { Link } from "react-router-dom";
+import Cart from "../images/cart.svg";
 const Home = () => {
   const navigate = useNavigate();
   const [radius, setRadius] = useState(5);
@@ -102,6 +104,16 @@ const Home = () => {
           </div>
         </div>
       </nav>
+      <div className="flex w-full justify-between px-10 h-[80px]">
+        <h1 className="flex items-center font-bold text-xl opacity-75">
+          Welcome {user} to Biteright, Go ahead and find a place to eat!
+        </h1>
+        <button className="flex items-center space-x-2">
+          <Link to="/cart">
+            <img src={Cart} alt="" />
+          </Link>
+        </button>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="w-full md:w-1/2">
@@ -143,21 +155,6 @@ const Home = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-1"
-              >
-                <option value="">All Categories</option>
-                <option value="restaurant">Restaurant</option>
-                <option value="cafe">Cafe</option>
-                <option value="fastfood">Fast Food</option>
-              </select>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
