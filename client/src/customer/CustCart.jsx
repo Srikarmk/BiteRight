@@ -22,14 +22,112 @@ const CustCart = () => {
   }, []);
   console.log(cartItems);
   const handleLogout = () => {
+    localStorage.removeItem("user");
     navigate("/");
   };
-  const total = Object.entries(cartItems).reduce(
-    (acc, [, item]) => acc + item.price * item.count,
-    0
+  const total = parseFloat(
+    Object.entries(cartItems).reduce(
+      (acc, [, item]) => acc + item.price * item.count,
+      0
+    )
   );
-  const serviceFee = 5.0; // Fixed service fee
-  const grandTotal = total + serviceFee;
+
+  const serviceFee = 5.0;
+  const grandTotal = parseFloat(total + serviceFee);
+
+  const handleDeleteItem = (key) => {
+    const updatedCartItems = { ...cartItems }; // Create a shallow copy of the cartItems object
+    delete updatedCartItems[key]; // Delete the item by key
+    setCartItems(updatedCartItems); // Update the state with the new object
+    localStorage.setItem("cart", JSON.stringify(updatedCartItems));
+  };
+
+  console.log(cartItems);
+
+  const handlePlaceOrder = async () => {
+    const details = JSON.parse(localStorage.getItem("cart")) || {};
+    console.log(details);
+    const firstItem = Object.values(details)[0];
+    console.log(firstItem);
+    console.log(Object.values(cartItems).map((item) => item.menu_item));
+    const order = {
+      restaurant_id: parseInt(firstItem.restaurant_id),
+      restaurant_name: String(firstItem.restaurant_name),
+      items_ordered: Object.values(cartItems).map((item) => item.menu_item),
+      item_count: Object.values(cartItems).reduce(
+        (acc, item) => acc + item.count,
+        0
+      ),
+      amount: parseInt(grandTotal),
+      status: "Pending",
+    };
+    console.log("Order to be sent:", JSON.stringify(order));
+
+    try {
+      const response = await fetch(`http://localhost:8000/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(order),
+      });
+
+      const responseData = await response.json();
+      console.log("Response data:", responseData);
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to create order: ${
+            responseData.message || response.statusText
+          }`
+        );
+      }
+
+      console.log(responseData.message);
+      navigate("/ordersplaced");
+    } catch (error) {
+      console.error("Error placing order:", error);
+    }
+  };
+  // const handlePlaceOrder = async () => {
+  //   const currentCart = JSON.parse(localStorage.getItem("cart")) || {};
+  //   const firstItem = Object.values(currentCart)[0];
+  //   const currRestaurant = firstItem.restaurant_name || "default_name";
+  //   const currRestaurantId = firstItem.restaurant_id || "default_id";
+  //   const order = {
+  //     restaurant_id: currRestaurant,
+  //     restaurant_name: currRestaurantId,
+  //     items_ordered: Object.keys(cartItems),
+  //     item_count: Object.values(cartItems).reduce(
+  //       (acc, item) => acc + item.count,
+  //       0
+  //     ),
+  //     amount: grandTotal,
+  //     status: "Pending", // or any initial status you want
+  //   };
+
+  //   try {
+  //     const response = await fetch("http://localhost:8000/orders", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(order),
+  //     });
+  //     console.log(order);
+  //     if (!response.ok) {
+  //       throw new Error("Failed to create order");
+  //     }
+
+  //     const data = await response.json();
+  //     console.log(data.message); // Handle success message
+  //     console.log("Order ID:", data.order_id); // Log the order ID
+  //     navigate("/ordersplaced"); // Redirect to orders placed page
+  //   } catch (error) {
+  //     console.error("Error placing order:", error);
+  //     // Handle error (e.g., show a notification to the user)
+  //   }
+  // };
   return (
     <div>
       <nav className="bg-[#EDEAE2] shadow-lg">
@@ -101,11 +199,17 @@ const CustCart = () => {
             {Object.entries(cartItems).map(([key, item], index) => (
               <tr key={key}>
                 <td className="border px-4 py-2">{index + 1}</td>
-                <td className="border px-4 py-2">{item.count}</td>{" "}
+                <td className="border px-4 py-2">{item.count}</td>
                 <td className="border px-4 py-2">{item.menu_item}</td>
+                <td className="border px-4 py-2">${item.price * item.count}</td>
                 <td className="border px-4 py-2">
-                  ${item.price * item.count}
-                </td>{" "}
+                  <button
+                    onClick={() => handleDeleteItem(key)}
+                    className="text-red-500"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -115,7 +219,10 @@ const CustCart = () => {
           <p className="font-bold">Service Fee: ${serviceFee.toFixed(2)}</p>
           <p className="font-bold">Grand Total: ${grandTotal.toFixed(2)}</p>
         </div>
-        <button className="mt-4 bg-blue-500 text-white px-4 py-2 rounded">
+        <button
+          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+          onClick={handlePlaceOrder}
+        >
           <Link to="/ordersplaced">Place Order</Link>
         </button>
       </div>

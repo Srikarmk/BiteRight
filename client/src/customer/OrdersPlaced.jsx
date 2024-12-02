@@ -7,16 +7,34 @@ const OrdersPlaced = () => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const [user, setUser] = useState("");
+  const [orderItems, setOrderItems] = useState([]);
+
   useEffect(() => {
     const curruser = JSON.parse(localStorage.getItem("user"));
     if (curruser) {
       setUser(curruser.firstname);
     }
   }, []);
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/orders"); // Adjust the URL as needed
+        const data = await response.json();
+        setOrderItems(data.order ? [data.order] : []); // Set order items to an array containing the order or an empty array
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+  console.log(orderItems);
 
   const handleLogout = () => {
-    navigate("/");
+    localStorage.removeItem("user");
+    navigate("/"); // Navigate to home
   };
+  console.log(orderItems);
   return (
     <div>
       <nav className="bg-[#EDEAE2] shadow-lg">
@@ -75,24 +93,34 @@ const OrdersPlaced = () => {
       </div>
       <div className="max-w-7xl mx-auto px-4 mt-4">
         <h2 className="text-xl font-bold">Order Summary</h2>
-        <p className="mt-2">Order ID: #123456</p>
+        <p className="mt-2">
+          Order ID: {orderItems.length > 0 ? orderItems[0].order_id : "N/A"}
+        </p>
         <div className="mt-2">
           <table className="min-w-full mt-2 border">
             <thead>
               <tr>
                 <th className="border px-4 py-2">S.no</th>
                 <th className="border px-4 py-2">Quantity</th>
-                <th className="border px-4 py-2">Item</th>
+                <th className="border px-4 py-2">Items</th>
                 <th className="border px-4 py-2">Price</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td className="border px-4 py-2">1</td>
-                <td className="border px-4 py-2">2</td>
-                <td className="border px-4 py-2">Item Name</td>
-                <td className="border px-4 py-2">$10.00</td>
-              </tr>
+              {orderItems.map((item, index) => (
+                <tr key={index}>
+                  <td className="border px-4 py-2">{index + 1}</td>
+                  <td className="border px-4 py-2">{item.item_count}</td>
+                  <td className="border px-4 py-2">
+                    {Object.keys(item.items_ordered).map(
+                      (orderedItem, index) => (
+                        <div key={index}>{item.items_ordered[orderedItem]}</div>
+                      )
+                    )}
+                  </td>
+                  <td className="border px-4 py-2">${item.amount}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
           <span className="font-semibold">Status: </span>

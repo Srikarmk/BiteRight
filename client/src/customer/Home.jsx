@@ -7,31 +7,23 @@ import Cart from "../images/cart.svg";
 const Home = () => {
   const navigate = useNavigate();
   const [radius, setRadius] = useState(5);
-  const [category, setCategory] = useState("");
+  // const [category, setCategory] = useState("");
   const [cuisine, setCuisine] = useState("");
   const [price, setPrice] = useState("");
-  const [alcohol, setAlcohol] = useState("");
+  // const [alcohol, setAlcohol] = useState("");
   const [rating, setRating] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [zipcode, setZipcode] = useState("12345");
+  // const [zipcode, setZipcode] = useState("12345");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [user, setUser] = useState("");
+  const [userName, setUserName] = useState("");
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const [nearbyRestaurants, setNearbyRestaurants] = useState([]);
+  const [allNearby, setAllNearby] = useState([]);
   const handleSearch = async (e) => {
     e.preventDefault();
     liveSearch(searchQuery);
   };
-  const handleLogout = () => {
-    navigate("/");
-  };
-  useEffect(() => {
-    const curruser = JSON.parse(localStorage.getItem("user"));
-    if (curruser) {
-      setUser(curruser.firstname);
-    }
-  }, []);
 
   const liveSearch = useCallback(async (query) => {
     if (!query.trim()) {
@@ -60,6 +52,87 @@ const Home = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, liveSearch]);
 
+  const fetchNearbyRestaurants = useCallback(async () => {
+    try {
+      const curruser = JSON.parse(localStorage.getItem("user")); // Retrieve user object
+      const address = curruser ? curruser.address : null;
+      if (!address) {
+        console.error("Address not found in local storage");
+        return;
+      }
+
+      const response = await axios.post(
+        "http://localhost:8000/recognize-items/",
+        {
+          address: address,
+          radius_km: radius,
+        }
+      );
+
+      setNearbyRestaurants(response.data.results); // Store nearby restaurants in state
+      console.log("Nearby Restaurants:", response.data.results);
+    } catch (error) {
+      console.error("Error fetching nearby restaurants:", error);
+    }
+  }, [radius]);
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/");
+  };
+  useEffect(() => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    if (curruser) {
+      setUserName(curruser.firstname);
+      fetchNearbyRestaurants();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      fetchNearbyRestaurants();
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    let all_nearby = nearbyRestaurants?.nearby_restaurants || [];
+    const filteredNearbyRestaurants = all_nearby.filter(
+      (restaurant) =>
+        (cuisine === "" ||
+          restaurant.Cuisine.toLowerCase() === cuisine.toLowerCase()) &&
+        (rating === "" || restaurant.Rating >= rating) && // Add rating filter
+        (price === "" || restaurant.PriceRange == price) // Add category filter
+    );
+    setAllNearby(filteredNearbyRestaurants);
+  }, [cuisine, rating, price, nearbyRestaurants]);
+
+  useEffect(() => {
+    fetchNearbyRestaurants();
+  }, [radius, fetchNearbyRestaurants]);
+  console.log(nearbyRestaurants.nearby_restaurants);
+
+  const handleDeleteAccount = async () => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    if (!curruser) return;
+
+    try {
+      await axios.delete(`http://localhost:8000/customers/${curruser.email}`);
+      localStorage.removeItem("user");
+      navigate("/");
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    }
+  };
+  useEffect(() => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    console.log(curruser);
+    if (curruser) {
+      const user_val = curruser.firstName; // Corrected access to firstname
+      console.log(user_val);
+      setUserName(user_val);
+    }
+  }, []);
+  console.log(userName);
+
   return (
     <div className="min-h-screen bg-[#EDEAE2] pb-20">
       <nav className="bg-[#EDEAE2] shadow-lg">
@@ -74,7 +147,7 @@ const Home = () => {
                   className="flex items-center space-x-1 text-gray-700 hover:text-gray-900"
                   onClick={() => setShowDropdown(!showDropdown)}
                 >
-                  <span>Welcome {user}</span>
+                  <span>Welcome {userName}</span>
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -97,6 +170,12 @@ const Home = () => {
                     >
                       Logout
                     </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      className="block px-4 py-2 text-sm text-red-600 hover:bg-red-100 w-full text-left"
+                    >
+                      Delete Account
+                    </button>
                   </div>
                 )}
               </div>
@@ -106,7 +185,7 @@ const Home = () => {
       </nav>
       <div className="flex w-full justify-between px-10 h-[80px]">
         <h1 className="flex items-center font-bold text-xl opacity-75">
-          Welcome {user} to Biteright, Go ahead and find a place to eat!
+          Welcome {userName} to Biteright, Go ahead and find a place to eat!
         </h1>
         <button className="flex items-center space-x-2">
           <Link to="/cart">
@@ -118,22 +197,10 @@ const Home = () => {
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="w-full md:w-1/2">
           <div className="relative flex items-center gap-2">
-            Zipcode:{" "}
-            <input
-              type="text"
-              value={zipcode}
-              onChange={(e) => setZipcode(e.target.value)}
-              className="mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-1 inline-block"
-              placeholder="Enter zipcode"
-            />
-            <button
-              className="px-4 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-              onClick={() => {
-                console.log("Searching with zipcode:", zipcode);
-              }}
-            >
-              Set Location
-            </button>
+            Address:{" "}
+            {userName
+              ? JSON.parse(localStorage.getItem("user")).address
+              : "No address found"}
           </div>
         </div>
       </div>
@@ -155,7 +222,6 @@ const Home = () => {
               />
             </div>
 
-
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Cuisine
@@ -169,6 +235,12 @@ const Home = () => {
                 <option value="italian">Italian</option>
                 <option value="indian">Indian</option>
                 <option value="japanese">Japanese</option>
+                <option value="american">American</option>
+                <option value="french">French</option>
+                <option value="chinese">Chinese</option>
+                <option value="mediterranean">Mediterranean</option>
+                <option value="asian">Asian</option>
+                <option value="thai">Thai</option>
               </select>
             </div>
 
@@ -182,24 +254,9 @@ const Home = () => {
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-1"
               >
                 <option value="">All Prices</option>
-                <option value="$">$</option>
-                <option value="$$">$$</option>
-                <option value="$$$">$$$</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Alcohol Served
-              </label>
-              <select
-                value={alcohol}
-                onChange={(e) => setAlcohol(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-1"
-              >
-                <option value="">Both</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
+                <option value="1">$</option>
+                <option value="2">$$</option>
+                <option value="3">$$$</option>
               </select>
             </div>
 
@@ -213,15 +270,17 @@ const Home = () => {
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-1"
               >
                 <option value="">Any Rating</option>
-                <option value="3">3+ Stars</option>
-                <option value="4">4+ Stars</option>
-                <option value="4.5">4.5+ Stars</option>
+                <option value="3">3</option>
+                <option value="3.5">3.5</option>
+                <option value="4">4</option>
+                <option value="4.5">4.5</option>
+                <option value="5">5</option>
               </select>
             </div>
           </div>
 
           <div className="w-full md:w-3/4">
-            <form onSubmit={handleSearch} className="mb-8">
+            <form onSubmit={handleSearch} className="mb-8 w-full">
               <div className="flex gap-4 max-w-2xl mx-auto">
                 <input
                   type="text"
@@ -239,35 +298,62 @@ const Home = () => {
                 </button>
               </div>
             </form>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {restaurants.map((restaurant) => (
-                <div
-                  key={restaurant.restaurant_id}
-                  className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() =>
-                    navigate(`/restaurant/${restaurant.restaurant_id}`)
-                  }
-                >
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    {restaurant.name}
-                  </h3>
-                  <div className="space-y-2 text-gray-600">
-                    <p className="flex items-center">
-                      <span className="font-medium mr-2">Cuisine:</span>
-                      {restaurant.cuisine}
-                    </p>
-                    <p className="flex items-center">
-                      <span className="font-medium mr-2">Borough:</span>
-                      {restaurant.borough}
-                    </p>
-                    <p className="flex items-center">
-                      <span className="font-medium mr-2">Rating:</span>
-                      {restaurant.stars} ⭐
-                    </p>
-                  </div>
-                </div>
-              ))}
+              {restaurants.length > 0 // Check if there are search results
+                ? restaurants.map((restaurant) => (
+                    <div
+                      key={restaurant.restaurant_id}
+                      className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() =>
+                        navigate(`/restaurant/${restaurant.restaurant_id}`)
+                      }
+                    >
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        {restaurant.name}
+                      </h3>
+                      <div className="space-y-2 text-gray-600">
+                        <p className="flex items-center">
+                          <span className="font-medium mr-2">Cuisine:</span>
+                          {restaurant.cuisine}
+                        </p>
+                        <p className="flex items-center">
+                          <span className="font-medium mr-2">Borough:</span>
+                          {restaurant.borough}
+                        </p>
+                        <p className="flex items-center">
+                          <span className="font-medium mr-2">Rating:</span>
+                          {restaurant.stars} ⭐
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                : allNearby.map((restaurant) => (
+                    <div
+                      key={restaurant.restId}
+                      className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() =>
+                        navigate(`/restaurant/${restaurant.restId}`)
+                      }
+                    >
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        {restaurant.Name}
+                      </h3>
+                      <div className="space-y-2 text-gray-600">
+                        <p className="flex items-center">
+                          <span className="font-medium mr-2">Cuisine:</span>
+                          {restaurant.Cuisine}
+                        </p>
+                        <p className="flex items-center">
+                          <span className="font-medium mr-2">Borough:</span>
+                          {restaurant.Borough}
+                        </p>
+                        <p className="flex items-center">
+                          <span className="font-medium mr-2">Rating:</span>
+                          {restaurant.Rating} ⭐
+                        </p>
+                      </div>
+                    </div>
+                  ))}
             </div>
             {restaurants.length === 0 && !loading && searchQuery && (
               <div className="text-center text-gray-600 mt-8">

@@ -71,6 +71,8 @@ const Restaurant = () => {
               .menu_item,
             price: menuItems.find((item) => item.menu_item === itemId).price,
             count: newCount,
+            restaurant_id: restaurant.restaurant_id, // Store restaurant_id
+            restaurant_name: restaurant.name, // Store restaurant name
           };
         }
         localStorage.setItem("cart", JSON.stringify(currentCart)); // Save updated cart to local storage
@@ -81,7 +83,8 @@ const Restaurant = () => {
   };
 
   const handleLogout = () => {
-    navigate("/");
+    localStorage.removeItem("user"); // Clear user object from local storage
+    navigate("/"); // Navigate to home
   };
   if (loading) {
     return <div className="text-center py-10">Loading...</div>;

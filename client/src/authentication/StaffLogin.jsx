@@ -45,7 +45,7 @@ const StaffLogin = () => {
         if (formData.role === "Manager") {
           navigate("/manager");
         } else if (formData.role === "Chef") {
-          navigate("/chef");
+          navigate("/manager");
         }
       } else {
         // More detailed error handling
