@@ -48,7 +48,6 @@ const StaffLogin = () => {
           navigate("/manager");
         }
       } else {
-        // More detailed error handling
         setError(
           data.detail ||
             data.message ||

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../images/Logo.png";
 import axios from "axios";
@@ -20,6 +20,8 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [nearbyRestaurants, setNearbyRestaurants] = useState([]);
   const [allNearby, setAllNearby] = useState([]);
+  const [userAddress, setUserAddress] = useState("");
+  const [loadingMessage, setLoadingMessage] = useState("");
   const handleSearch = async (e) => {
     e.preventDefault();
     liveSearch(searchQuery);
@@ -69,7 +71,7 @@ const Home = () => {
         }
       );
 
-      setNearbyRestaurants(response.data.results); // Store nearby restaurants in state
+      setNearbyRestaurants(response.data.results);
       console.log("Nearby Restaurants:", response.data.results);
     } catch (error) {
       console.error("Error fetching nearby restaurants:", error);
@@ -79,19 +81,13 @@ const Home = () => {
     localStorage.removeItem("user");
     navigate("/");
   };
-  useEffect(() => {
-    const curruser = JSON.parse(localStorage.getItem("user"));
-    if (curruser) {
-      setUserName(curruser.firstname);
-      fetchNearbyRestaurants();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!searchQuery) {
-      fetchNearbyRestaurants();
-    }
-  }, [searchQuery]);
+  // useEffect(() => {
+  //   const curruser = JSON.parse(localStorage.getItem("user"));
+  //   if (curruser) {
+  //     setUserName(curruser.firstname);
+  //     fetchNearbyRestaurants();
+  //   }
+  // }, []);
 
   useEffect(() => {
     let all_nearby = nearbyRestaurants?.nearby_restaurants || [];
@@ -106,8 +102,11 @@ const Home = () => {
   }, [cuisine, rating, price, nearbyRestaurants]);
 
   useEffect(() => {
-    fetchNearbyRestaurants();
-  }, [radius, fetchNearbyRestaurants]);
+    if (radius > 0) {
+      // Ensure radius is valid before fetching
+      fetchNearbyRestaurants();
+    }
+  }, [radius]);
   console.log(nearbyRestaurants.nearby_restaurants);
 
   const handleDeleteAccount = async () => {
@@ -126,13 +125,26 @@ const Home = () => {
     const curruser = JSON.parse(localStorage.getItem("user"));
     console.log(curruser);
     if (curruser) {
-      const user_val = curruser.firstName; // Corrected access to firstname
+      const user_val = curruser.firstName;
       console.log(user_val);
       setUserName(user_val);
     }
   }, []);
   console.log(userName);
-
+  useEffect(() => {
+    if (!searchQuery) {
+      fetchNearbyRestaurants();
+    }
+  }, [searchQuery]);
+  useEffect(() => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    if (curruser) {
+      setUserName(curruser.firstName);
+      setUserAddress(curruser.address); // Set user address once
+      fetchNearbyRestaurants();
+    }
+  }, []);
+  console.log(restaurants);
   return (
     <div className="min-h-screen bg-[#EDEAE2] pb-20">
       <nav className="bg-[#EDEAE2] shadow-lg">
@@ -350,6 +362,12 @@ const Home = () => {
                         <p className="flex items-center">
                           <span className="font-medium mr-2">Rating:</span>
                           {restaurant.Rating} ⭐
+                        </p>
+                        <p className="flex items-center">
+                          <span className="font-medium mr-2">Price Range:</span>
+                          {restaurant.PriceRange &&
+                            "$".repeat(restaurant.PriceRange)}{" "}
+                          {/* Display dollar signs */}
                         </p>
                       </div>
                     </div>

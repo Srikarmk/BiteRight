@@ -2,7 +2,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Cart from "../images/cart.svg";
 import Logo from "../images/Logo.png";
-
+import axios from "axios";
 const Restaurant = () => {
   const navigate = useNavigate();
   const { restaurantId } = useParams();
@@ -12,10 +12,11 @@ const Restaurant = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState("");
+
   useEffect(() => {
     const curruser = JSON.parse(localStorage.getItem("user"));
     if (curruser) {
-      setUser(curruser.firstname);
+      setUser(curruser.firstName);
     }
   }, []);
 
@@ -93,6 +94,20 @@ const Restaurant = () => {
   if (!restaurant) {
     return <div className="text-center py-10">Restaurant not found</div>;
   }
+
+  const handleDeleteAccount = async () => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    if (!curruser) return;
+
+    try {
+      await axios.delete(`http://localhost:8000/customers/${curruser.email}`);
+      localStorage.removeItem("user");
+      navigate("/");
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    }
+  };
+
   return (
     <div>
       <nav className="bg-[#EDEAE2] shadow-lg">
@@ -129,6 +144,12 @@ const Restaurant = () => {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
                       Logout
+                    </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      className="block px-4 py-2 text-sm text-red-600 hover:bg-red-100 w-full text-left"
+                    >
+                      Delete Account
                     </button>
                   </div>
                 )}

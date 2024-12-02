@@ -1,7 +1,6 @@
 import Logo from "../images/Logo.png";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import Image from "../../../server/40364610_1.png";
 const Manager = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [staffName, setStaffName] = useState("");
@@ -51,26 +50,28 @@ const Manager = () => {
     fetchHighestOrderedDishAndRevenue();
   }, []);
 
-  useEffect(() => {
-    const fetchOrderHistory = async () => {
-      const restaurant_id = JSON.parse(
-        localStorage.getItem("staffUser")
-      )?.rest_id;
+  // useEffect(() => {
+  //   const fetchOrderHistory = async () => {
+  //     const restaurant_id = JSON.parse(
+  //       localStorage.getItem("staffUser")
+  //     )?.rest_id;
 
-      try {
-        const orderHistoryResponse = await fetch(
-          `http://localhost:8000/orders/${restaurant_id}`
-        );
-        const orderHistoryData = await orderHistoryResponse.json();
-        console.log(orderHistoryData);
-        setOrderHistory(orderHistoryData);
-      } catch (error) {
-        console.error("Error fetching order history:", error);
-      }
-    };
+  //     try {
+  //       const orderHistoryResponse = await fetch(
+  //         `http://localhost:8000/orders/${restaurant_id}`
+  //       );
+  //       const orderHistoryData = await orderHistoryResponse.json();
+  //       console.log(orderHistoryData);
+  //       setOrderHistory(orderHistoryData);
+  //     } catch (error) {
+  //       console.error("Error fetching order history:", error);
+  //     }
+  //   };
 
-    fetchOrderHistory();
-  }, []); // Separate useEffect for order history
+  //   fetchOrderHistory();
+  // }, []); // Separate useEffect for order history
+
+  console.log(orderHistory);
 
   useEffect(() => {
     const staffUser = JSON.parse(localStorage.getItem("staffUser"));
@@ -79,45 +80,54 @@ const Manager = () => {
     }
   }, []);
 
-  console.log(recentOrder.Status);
-  // const updateOrderStatus = async (orderId, status) => {
-  //   try {
-  //     await fetch(`http://localhost:8000/orders/${orderId}`, {
-  //       method: "PUT",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ status }),
-  //     });
+  const fetchOrderHistory = async () => {
+    // Define the function here
+    const restaurant_id = JSON.parse(
+      localStorage.getItem("staffUser")
+    )?.rest_id;
 
-  //     console.log(status);
-  //     // Update the local orderHistory state
-  //     setOrderHistory(status);
-  //   } catch (error) {
-  //     console.error("Error updating order status:", error);
-  //   }
-  // };
-  // useEffect(() => {
-  //   const fetchRestaurantImages = async () => {
-  //     const restaurant_id = JSON.parse(
-  //       localStorage.getItem("staffUser")
-  //     )?.rest_id;
+    try {
+      const orderHistoryResponse = await fetch(
+        `http://localhost:8000/orders/${restaurant_id}`
+      );
+      const orderHistoryData = await orderHistoryResponse.json();
+      console.log(orderHistoryData);
+      setOrderHistory(orderHistoryData);
+    } catch (error) {
+      console.error("Error fetching order history:", error);
+    }
+  };
 
-  //     try {
-  //       const response = await fetch(
-  //         `http://localhost:8000/save-images/${restaurant_id}`
-  //       );
-  //       // const data = await response.json();
-  //       // Assuming the API returns the image URLs in the response
-  //       // setRestaurantImages(data.images); // Update state with image URLs
-  //     } catch (error) {
-  //       console.error("Error fetching restaurant images:", error);
-  //     }
-  //   };
+  // Separate useEffect for order history
 
-  //   fetchRestaurantImages(); // Call the new function
-  // }, []);
+  const updateOrderStatus = async (orderId, status) => {
+    console.log(status);
+    try {
+      await fetch(`http://localhost:8000/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
 
+      fetchOrderHistory(); // Call the function to fetch order history again
+      console.log(status);
+      // Update the local orderHistory state correctly
+      setOrderHistory((prevHistory) => ({
+        ...prevHistory,
+        recent_orders: prevHistory.recent_orders.map((order) =>
+          order.id === orderId ? { ...order, Status: status } : order
+        ),
+      }));
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrderHistory(); // Call the function to fetch order history on component mount
+  }, []);
   useEffect(() => {
     const fetchRestaurantImages = async () => {
       const restaurant_id = JSON.parse(
@@ -146,15 +156,17 @@ const Manager = () => {
   const changeImage = (direction) => {
     setCurrentImageIndex((prevIndex) => {
       if (direction === "next") {
-        return (prevIndex + 1) % restaurantImagesArray.length; // Loop back to the first image
+        return (prevIndex + 1) % restaurantImagesArray.length;
       } else {
         return (
           (prevIndex - 1 + restaurantImagesArray.length) %
           restaurantImagesArray.length
-        ); // Loop back to the last image
+        );
       }
     });
   };
+  const staffUser = JSON.parse(localStorage.getItem("staffUser"));
+  const isChef = staffUser?.role === "Chef";
 
   console.log(totalRevenue.total_sales);
   console.log(highestOrderedDish);
@@ -199,51 +211,56 @@ const Manager = () => {
       </nav>
 
       <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">{restaurantName}</h1>
+        {!isChef && (
+          <>
+            <h1 className="text-3xl font-bold mb-8">{restaurantName}</h1>
 
-        <div className="grid grid-cols-2 gap-6 mb-12">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="border-2 border-[#A04732] p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2">Most Ordered</h3>
-              <p className="text-xl font-bold">
-                {highestOrderedDish.highest_ordered_dish}
-              </p>
+            <div className="grid grid-cols-2 gap-6 mb-12">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border-2 border-[#A04732] p-4 rounded-lg shadow">
+                  <h3 className="text-gray-600 mb-2">Most Ordered</h3>
+                  <p className="text-xl font-bold">
+                    {highestOrderedDish.highest_ordered_dish}
+                  </p>
+                </div>
+                <div className="border-2 border-[#A04732] p-4 rounded-lg shadow">
+                  <h3 className="text-gray-600 mb-2">Revenue This Month</h3>
+                  <p className="text-xl font-bold">
+                    ${totalRevenue.total_sales}
+                  </p>
+                </div>
+                <div className="border-2 border-[#A04732]  p-4 rounded-lg shadow">
+                  <h3 className="text-gray-600 mb-2">Ratings</h3>
+                  <p className="text-xl font-bold">4.8/5.0</p>
+                </div>
+                <div className="border-2 border-[#A04732]  p-4 rounded-lg shadow">
+                  <h3 className="text-gray-600 mb-2">Recent Order Status</h3>
+                  <p className="text-xl font-bold">{recentOrder.Status}</p>
+                </div>
+              </div>
+              <div className="border-2 border-[#A04732] p-4 rounded-lg shadow">
+                <h3 className="text-gray-600 mb-2 text-center">
+                  Restaurant Visualizations
+                </h3>
+                <div className="flex items-center">
+                  <button onClick={() => changeImage("prev")} className="mr-2">
+                    ←
+                  </button>
+                  {restaurantImagesArray.length > 0 && (
+                    <img
+                      src={`data:image/png;base64,${restaurantImagesArray[currentImageIndex]}`}
+                      alt={`Restaurant Image ${currentImageIndex + 1}`}
+                      className="w-[600px] h-auto object-cover"
+                    />
+                  )}
+                  <button onClick={() => changeImage("next")} className="ml-2">
+                    →
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="border-2 border-[#A04732] p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2">Revenue This Month</h3>
-              <p className="text-xl font-bold">${totalRevenue.total_sales}</p>
-            </div>
-            <div className="border-2 border-[#A04732]  p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2">Ratings</h3>
-              <p className="text-xl font-bold">4.8/5.0</p>
-            </div>
-            <div className="border-2 border-[#A04732]  p-4 rounded-lg shadow">
-              <h3 className="text-gray-600 mb-2">Recent Order Status</h3>
-              <p className="text-xl font-bold">{recentOrder.Status}</p>
-            </div>
-          </div>
-          <div className="border-2 border-[#A04732] p-4 rounded-lg shadow">
-            <h3 className="text-gray-600 mb-2 text-center">
-              Restaurant Visualizations
-            </h3>
-            <div className="flex items-center">
-              <button onClick={() => changeImage("prev")} className="mr-2">
-                ←
-              </button>
-              {restaurantImagesArray.length > 0 && (
-                <img
-                  src={`data:image/png;base64,${restaurantImagesArray[currentImageIndex]}`}
-                  alt={`Restaurant Image ${currentImageIndex + 1}`}
-                  className="w-[600px] h-auto object-cover"
-                />
-              )}
-              <button onClick={() => changeImage("next")} className="ml-2">
-                →
-              </button>
-            </div>
-          </div>
-        </div>
-
+          </>
+        )}
         <div className="rounded-lg shadow p-6">
           <h2 className="text-2xl font-bold mb-4">Order History</h2>
           <div className="overflow-x-auto">
@@ -270,33 +287,38 @@ const Manager = () => {
                         <td className="py-3">{order.order_id}</td>
                         <td className="py-3">{order.customer_name}</td>
                         <td className="py-3">
-                          {typeof order.items_ordered === "string" && // Check if items_ordered is a string
-                            Object.entries(
-                              JSON.parse(order.items_ordered.replace(/'/g, '"'))
-                            ).map(
-                              // Replace single quotes and parse
+                          {typeof order.Items_ordered === "object" && // Check if items_ordered is an object
+                            Object.entries(order.Items_ordered).map(
                               ([item, quantity], index) => (
                                 <div key={index}>
-                                  {item} (Quantity: {quantity}) // Display item
-                                  name and quantity
+                                  {item} x {quantity}
                                 </div>
                               )
                             )}
                         </td>
                         <td className="py-3">${order.Amount}</td>
                         <td className="py-3">
-                          <select
-                            value={order.Status} // Ensure this is unique for each order
-                            className="border rounded p-1"
-                            // onChange={(e) => {
-                            //   const updatedStatus = e.target.value;
-                            //   updateOrderStatus(order.id, updatedStatus); // Call the function to update status
-                            // }}
-                          >
-                            <option value="In Progress">In Progress</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Cancelled">Cancelled</option>
-                          </select>
+                          {isChef ? (
+                            <select
+                              value={order.status}
+                              className="border rounded p-1"
+                              onChange={(e) => {
+                                const updatedStatus = e.target.value;
+                                updateOrderStatus(
+                                  order.order_id,
+                                  updatedStatus
+                                );
+                              }}
+                            >
+                              <option value="In Progress">In Progress</option>
+                              <option value="Delivered">Delivered</option>
+                              <option value="Cancelled">Cancelled</option>
+                            </select>
+                          ) : (
+                            <span>
+                              {order.status ? order.status : order.Status}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     )

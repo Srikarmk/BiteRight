@@ -1,18 +1,19 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Cart from "../images/cart.svg";
 import Logo from "../images/Logo.png";
-
+import axios from "axios";
 const CustCart = () => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const [user, setUser] = useState("");
   const [cartItems, setCartItems] = useState({});
+  const [suggestedItems, setSuggestedItems] = useState([]);
 
   useEffect(() => {
     const curruser = JSON.parse(localStorage.getItem("user"));
     if (curruser) {
-      setUser(curruser.firstname);
+      setUser(curruser.firstName);
     }
   }, []);
 
@@ -75,59 +76,57 @@ const CustCart = () => {
       const responseData = await response.json();
       console.log("Response data:", responseData);
 
-      if (!response.ok) {
-        throw new Error(
-          `Failed to create order: ${
-            responseData.message || response.statusText
-          }`
-        );
-      }
-
-      console.log(responseData.message);
+      localStorage.removeItem("cart"); // Remove cart from local storage
+      setCartItems({}); // Clear cart items in state
       navigate("/ordersplaced");
     } catch (error) {
       console.error("Error placing order:", error);
     }
   };
-  // const handlePlaceOrder = async () => {
-  //   const currentCart = JSON.parse(localStorage.getItem("cart")) || {};
-  //   const firstItem = Object.values(currentCart)[0];
-  //   const currRestaurant = firstItem.restaurant_name || "default_name";
-  //   const currRestaurantId = firstItem.restaurant_id || "default_id";
-  //   const order = {
-  //     restaurant_id: currRestaurant,
-  //     restaurant_name: currRestaurantId,
-  //     items_ordered: Object.keys(cartItems),
-  //     item_count: Object.values(cartItems).reduce(
-  //       (acc, item) => acc + item.count,
-  //       0
-  //     ),
-  //     amount: grandTotal,
-  //     status: "Pending", // or any initial status you want
-  //   };
+  const handleDeleteAccount = async () => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    if (!curruser) return;
 
-  //   try {
-  //     const response = await fetch("http://localhost:8000/orders", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify(order),
-  //     });
-  //     console.log(order);
-  //     if (!response.ok) {
-  //       throw new Error("Failed to create order");
-  //     }
+    try {
+      await axios.delete(`http://localhost:8000/customers/${curruser.email}`);
+      localStorage.removeItem("user");
+      navigate("/");
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    }
+  };
 
-  //     const data = await response.json();
-  //     console.log(data.message); // Handle success message
-  //     console.log("Order ID:", data.order_id); // Log the order ID
-  //     navigate("/ordersplaced"); // Redirect to orders placed page
-  //   } catch (error) {
-  //     console.error("Error placing order:", error);
-  //     // Handle error (e.g., show a notification to the user)
-  //   }
-  // };
+  const fetchSuggestedItems = async () => {
+    const firstItem = Object.values(cartItems)[0];
+    // Check if firstItem exists before accessing its properties
+    if (!firstItem || !firstItem.menu_item) return; // Prevent error if firstItem is undefined
+
+    const firstItemName = firstItem.menu_item; // Get the name of the first item
+    if (!firstItemName) return;
+
+    try {
+      const response = await fetch("http://localhost:8000/get-consequents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ item_name: firstItemName }),
+      });
+
+      const data = await response.json(); // Parse the JSON response
+      setSuggestedItems(data.consequents); // Update the suggested items
+    } catch (error) {
+      console.error("Error fetching suggested items:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (Object.keys(cartItems).length > 0) {
+      fetchSuggestedItems(); // Fetch suggestions when cart items are updated
+    }
+  }, [cartItems]);
+  console.log(suggestedItems);
+
   return (
     <div>
       <nav className="bg-[#EDEAE2] shadow-lg">
@@ -164,6 +163,12 @@ const CustCart = () => {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
                       Logout
+                    </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      className="block px-4 py-2 text-sm text-red-600 hover:bg-red-100 w-full text-left"
+                    >
+                      Delete Account
                     </button>
                   </div>
                 )}
@@ -226,6 +231,23 @@ const CustCart = () => {
           <Link to="/ordersplaced">Place Order</Link>
         </button>
       </div>
+      {suggestedItems ? (
+        <div className="max-w-7xl mx-auto px-4 mt-10">
+          {suggestedItems.length > 0 ? (
+            <h2 className="text-lg font-bold ">You Might Also Like</h2>
+          ) : null}
+          <br />
+          <div className="flex space-x-10">
+            {suggestedItems.length > 0
+              ? suggestedItems.map((item, index) => (
+                  <div key={index} className="border rounded-lg p-4 shadow-md">
+                    <h3 className="font-semibold">{item}</h3>
+                  </div>
+                ))
+              : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

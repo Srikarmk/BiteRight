@@ -1,8 +1,8 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Cart from "../images/cart.svg";
 import Logo from "../images/Logo.png";
-
+import axios from "axios";
 const OrdersPlaced = () => {
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -12,7 +12,7 @@ const OrdersPlaced = () => {
   useEffect(() => {
     const curruser = JSON.parse(localStorage.getItem("user"));
     if (curruser) {
-      setUser(curruser.firstname);
+      setUser(curruser.firstName);
     }
   }, []);
   useEffect(() => {
@@ -35,6 +35,19 @@ const OrdersPlaced = () => {
     navigate("/"); // Navigate to home
   };
   console.log(orderItems);
+  const handleDeleteAccount = async () => {
+    const curruser = JSON.parse(localStorage.getItem("user"));
+    if (!curruser) return;
+
+    try {
+      await axios.delete(`http://localhost:8000/customers/${curruser.email}`);
+      localStorage.removeItem("user");
+      navigate("/");
+    } catch (error) {
+      console.error("Error deleting account:", error);
+    }
+  };
+
   return (
     <div>
       <nav className="bg-[#EDEAE2] shadow-lg">
@@ -71,6 +84,12 @@ const OrdersPlaced = () => {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
                       Logout
+                    </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      className="block px-4 py-2 text-sm text-red-600 hover:bg-red-100 w-full text-left"
+                    >
+                      Delete Account
                     </button>
                   </div>
                 )}

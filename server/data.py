@@ -90,12 +90,11 @@ async def login(credentials: dict):
 @app.post("/customers")
 async def create_customer(customer: Customer):
     try:
-        # Log the incoming customer data
         print("Received customer data:", customer.model_dump())
         
         if not all([
-            customer.firstname,
-            customer.lastname,
+            customer.firstName,
+            customer.lastName,
             customer.email,
             customer.contactNum,
             customer.address,
@@ -151,7 +150,7 @@ async def staff_login(credentials: dict):
             "password": credentials["password"],
             "role": credentials["role"]
         }, {"_id": 0})
-        
+        print(staff)
         if staff:
             return JSONResponse(content={"success": True, "user": staff})
         else:
@@ -159,7 +158,7 @@ async def staff_login(credentials: dict):
                 status_code=401, 
                 detail="Invalid credentials. Please check your Restaurant ID, email, password, and role."
             )
-    except Exception as e:
+    except Exception as e:  
         print("Error in staff_login:", str(e)) 
         raise HTTPException(
             status_code=500, 
@@ -292,6 +291,7 @@ class AddressRequest(BaseModel):
     address: str
     radius_km: int = 5  
     
+# import random
 
 @app.post("/recognize-items/")
 async def find_nearby_by_address(request: AddressRequest):
@@ -299,12 +299,11 @@ async def find_nearby_by_address(request: AddressRequest):
         address = request.address
         radius_km = request.radius_km
         
-        # Log the input values for debugging
         print(f"Received address: {address}, radius: {radius_km} km")
 
         nearby_restaurants = find_nearby_restaurants(address, radius_km)
+        # random.shuffle(nearby_restaurants)
 
-        # Log the output of the function
         print(f"Nearby restaurants found: {nearby_restaurants}")
 
         result_data = {
@@ -340,13 +339,13 @@ class Order(BaseModel):
     amount: int
     status: str
 
-order_id_counter = 16000
 
 @app.post("/orders")
 async def create_order(order:Order):
-    global order_id_counter
     print("Received order data:", order.model_dump())
     order.amount=float(order.amount)
+    latest_order = db["Orders"].find_one({}, sort=[("order_id", -1)])  # Retrieve the latest order
+    order_id_counter = latest_order["order_id"] + 1 if latest_order else 1 
     try:
         new_order = {
             "order_id": order_id_counter,
@@ -509,22 +508,24 @@ async def get_recent_orders(restaurant_id: int):
 class OrderUpdate(BaseModel):
     status: str 
 
-# @app.put("/orders/{order_id}")
-# async def update_order_status(order_id: int, order_update: OrderUpdate):  # Use the Pydantic model
-#     try:
-#         # Update the order status in the database
-#         result = db["Orders"].update_one(
-#             {"order_id": order_id},  # Find the order by order_id
-#             {"$set": {"status": order_update.status}}  # Update the status
-#         )
+@app.put("/orders/{order_id}")
+async def update_order_status(order_id: int, order_update: OrderUpdate):  # Use the Pydantic model
+    try:
+        # Update the order status in the database
+        result = db["Orders"].update_one(
+            {"order_id": order_id},  # Find the order by order_id
+            {"$set": {"status": order_update.status}}  # Update the status
+        )
         
-#         if result.modified_count == 0:
-#             raise HTTPException(status_code=404, detail="Order not found or status unchanged")
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Order not found or status unchanged")
         
-#         return {"message": "Order status updated successfully"}
-#     except Exception as e:
-#         print("Error in update_order_status:", str(e))
-#         raise HTTPException(status_code=500, detail="An error occurred while updating the order status")
+        return {"message": "Order status updated successfully"}
+    except HTTPException as http_ex:
+        raise http_ex  # Re-raise HTTP exceptions
+    except Exception as e:
+        print("Error in update_order_status:", str(e))
+        raise HTTPException(status_code=500, detail="An error occurred while updating the order status")
 
 
 
@@ -562,3 +563,42 @@ async def save_images(restaurant_id: int):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+from typing import List
+
+class ItemQuery(BaseModel):
+    item_name: str
+
+# Response model
+class ConsequentResponse(BaseModel):
+    consequents: List[str]
+
+@app.post("/get-consequents", response_model=ConsequentResponse)
+async def get_consequents(query: ItemQuery):
+    """
+    API to retrieve consequents for a given item name.
+    """
+    # Log the incoming query
+    print(f"Received query for item: {query.item_name}")
+
+    # Query the database for matching antecedents
+    documents = db["machinelearning"].find({"antecedent": query.item_name},{"_id":0})
+    
+    # Extract consequents with confidence > 0.5
+    consequents = []
+    for doc in documents:
+        print(f"Document found: {doc}")  # Log the found document
+        for consequent, confidence in zip(doc["consequent"], doc["confidence"]):
+            if confidence > 0.5:
+                consequents.append(consequent)
+                
+        # Break if we have at least 3 consequents
+        if len(consequents) >= 3:
+            break
+
+    if not consequents:
+        print("No matching consequents found.")  # Log the absence of consequents
+        raise HTTPException(status_code=404, detail="No matching consequents found.")
+    
+    print(f"Consequents found: {consequents[:3]}")  # Log the found consequents
+    return {"consequents": consequents[:3]}  # Return up to 3 consequents
