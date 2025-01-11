@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+
 const Signup = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -30,6 +32,7 @@ const Signup = () => {
         },
         body: JSON.stringify(formData),
       });
+      console.log(formData);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -37,9 +40,9 @@ const Signup = () => {
       }
 
       const data = await response.json();
-      console.log("Success:", data);
+      console.log("Success:", data.user);
       alert("Registration Successful!");
-      // Reset form data after successful registration
+      localStorage.setItem("user", JSON.stringify(data.user));
       setFormData({
         firstName: "",
         lastName: "",
@@ -49,6 +52,7 @@ const Signup = () => {
         zip: "",
         password: "",
       });
+      navigate("/home");
     } catch (error) {
       console.error("Error details:", error);
       alert(error.message || "Registration failed");
@@ -91,7 +95,7 @@ const Signup = () => {
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
-              type="text"
+              type="password"
               id="password"
               name="password"
               value={formData.password}

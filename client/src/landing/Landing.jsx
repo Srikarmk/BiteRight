@@ -8,12 +8,15 @@ const Landing = () => {
           <img src={Logo} alt="" className="w-[300px]" />
         </h1>
       </div>
-      <div className="flex space-x-40 justify-center mt-40">
+      <div className="flex space-x-40 justify-center mt-40 px-20">
         <div className="border-[3px] border-[#A04732] p-5 rounded-lg flex-col space-y-5">
           <h2 className="text-3xl text-[#A04732] font-bold">
             Existing customer
           </h2>
-          <p>Lorem ipsum dolor sit amet.</p>
+          <p>
+            Welcome back! Log in to access your account, browse your favorite
+            dishes.
+          </p>
 
           <button className="p-2 text-white bg-[#A04732] rounded-lg">
             <Link to="/login">Login</Link>
@@ -21,7 +24,7 @@ const Landing = () => {
         </div>
         <div className="border-[3px] border-[#A04732] p-5 rounded-lg flex-col space-y-5">
           <h2 className="text-3xl text-[#A04732] font-bold">New customer?</h2>
-          <p>Lorem ipsum dolor sit amet.</p>
+          <p>New here? Create an account to explore a world of flavors.</p>
           <button className="p-2 text-white bg-[#A04732] rounded-lg">
             <Link to="/signup">Signup</Link>
           </button>
@@ -30,7 +33,10 @@ const Landing = () => {
           <h2 className="text-3xl text-[#A04732] font-bold">
             Restaurant Manager or Chef?
           </h2>
-          <p>Lorem ipsum dolor sit amet.</p>
+          <p>
+            Manager or Chef ? Log in to manage restaurant operations and check
+            analytics.
+          </p>
           <button className="p-2 text-white bg-[#A04732] rounded-lg">
             <Link to="/stafflogin">Staff Login</Link>
           </button>
